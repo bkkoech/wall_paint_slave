@@ -27,39 +27,122 @@ Step 1: Calibrate
 
 
 //Declaration of pin numbers
-/*
-#define X_TP_STEPPER_WIRE_A 1
-#define X_TP_STEPPER_WIRE_B 2
-#define X_TP_STEPPER_WIRE_C 3
-#define X_TP_STEPPER_WIRE_D 4
-#define X_BTM_STEPPER_WIRE_A 5
-#define X_BTM_STEPPER_WIRE_B 6
-#define X_BTM_STEPPER_WIRE_C 7
-#define X_BTM_STEPPER_WIRE_D 8
-#define Z_STEPPER_WIRE_A 10
-#define Z_STEPPER_WIRE_B 11
-#define Z_STEPPER_WIRE_C 12
-#define Z_STEPPER_WIRE_D 13
-*/
+#define X_TOP_PIN_1 10
+#define X_TOP_PIN_2 11
+#define X_TOP_PIN_3 12
+#define X_TOP_PIN_4 13
+#define X_BTM_PIN_1 4
+#define X_BTM_PIN_2 5
+#define X_BTM_PIN_3 6
+#define X_BTM_PIN_4 7
+#define Z_PIN_1 A5
+#define Z_PIN_2 A4
+#define Z_PIN_3 2
+#define Z_PIN_4 3
 
 
 // Load libraries and modules
 #include <Stepper.h>
 #include <Servo.h>
 
+
+Stepper xTopStepper(200,X_TOP_PIN_1,X_TOP_PIN_2,X_TOP_PIN_3,X_TOP_PIN_4);
+Stepper xBtmStepper(200, X_BTM_PIN_1,X_BTM_PIN_2,X_BTM_PIN_3,X_BTM_PIN_4);
+
 //Constants and Variables
-const int stepsPerRevolution = 200;  // number of steps per revolution for your motor
 int x_stepCount = 0;         // number of steps the x motors have taken
 int x_pos = 0; //default x position
 int y_pos = 0; //default y position
 int z_pos = 0; //default z position
 
-// initialize the stepper library on pins 1 throught  8 for x.
-Stepper xTopStepper(stepsPerRevolution, 10, 11, 12, 13);
-Stepper xBottomStepper(stepsPerRevolution, 4, 5, 6, 7);
+// Use step frequency instead of delays
+// Based on FSM Code by by: David Abrams in ES52
+const int STEP_FREQ = 100;      // set to frequency of each step in Hz (max 500Hz)
+const int STEP_TIME = 1000/STEP_FREQ; // milliseconds per state cycle (do not change this variable)
+unsigned long StepStart;
 
-// initialize the stepper library on pins 10 throught  13 for z.
-Stepper zStepper(stepsPerRevolution, 0, 1, 2, 3);
+//Stepping function
+//based on https://github.com/arduino-libraries/Stepper/blob/master/src/Stepper.cpp
+ void Step(int no_steps, int motor_pin_1, int motor_pin_2, int motor_pin_3, int motor_pin_4){
+  
+  // Run this if no_steps is positive
+  for(int i=0; i<=no_steps; i++){
+    
+    // get time we started this FSM cycle
+    StepStart = millis();
+    
+      switch (i%4) {
+        case 0:  // 1010
+          digitalWrite(motor_pin_1, HIGH);
+          digitalWrite(motor_pin_2, LOW);
+          digitalWrite(motor_pin_3, HIGH);
+          digitalWrite(motor_pin_4, LOW);
+        break;
+        case 1:  // 0110
+          digitalWrite(motor_pin_1, LOW);
+          digitalWrite(motor_pin_2, HIGH);
+          digitalWrite(motor_pin_3, HIGH);
+          digitalWrite(motor_pin_4, LOW);
+        break;
+        case 2:  //0101
+          digitalWrite(motor_pin_1, LOW);
+          digitalWrite(motor_pin_2, HIGH);
+          digitalWrite(motor_pin_3, LOW);
+          digitalWrite(motor_pin_4, HIGH);
+        break;
+        case 3:  //1001
+          digitalWrite(motor_pin_1, HIGH);
+          digitalWrite(motor_pin_2, LOW);
+          digitalWrite(motor_pin_3, LOW);
+          digitalWrite(motor_pin_4, HIGH);
+        break;
+      }
+      
+       // wait one FSM cycle  
+       while (millis() < (StepStart + STEP_TIME)) {
+       } 
+                                                      
+  }
+
+    // Run this if no_steps is negative
+    for(int i=no_steps; i<=0; i++){
+    
+    // get time we started this FSM cycle
+    StepStart = millis();
+    
+      switch (abs(i%4)) {
+        case 0:  // 1010
+          digitalWrite(motor_pin_1, HIGH);
+          digitalWrite(motor_pin_2, LOW);
+          digitalWrite(motor_pin_3, HIGH);
+          digitalWrite(motor_pin_4, LOW);
+        break;
+        case 1:  // 0110
+          digitalWrite(motor_pin_1, LOW);
+          digitalWrite(motor_pin_2, HIGH);
+          digitalWrite(motor_pin_3, HIGH);
+          digitalWrite(motor_pin_4, LOW);
+        break;
+        case 2:  //0101
+          digitalWrite(motor_pin_1, LOW);
+          digitalWrite(motor_pin_2, HIGH);
+          digitalWrite(motor_pin_3, LOW);
+          digitalWrite(motor_pin_4, HIGH);
+        break;
+        case 3:  //1001
+          digitalWrite(motor_pin_1, HIGH);
+          digitalWrite(motor_pin_2, LOW);
+          digitalWrite(motor_pin_3, LOW);
+          digitalWrite(motor_pin_4, HIGH);
+        break;
+      }
+      // wait one FSM cycle  
+      while (millis() < (StepStart + STEP_TIME)) {
+
+    }
+  }
+
+ }
 
 
 // create servo object to control a servo
@@ -70,7 +153,7 @@ Servo yServo;
 void move_x_forward(int no_of_steps) {
   for (int i=1; i <= no_of_steps; i++){
     xTopStepper.step(1); // move top x stepper
-    xBottomStepper.step(-1); // move bottom x stepper
+    xBtmStepper.step(-1); // move bottom x stepper
   }
 }
 
@@ -78,13 +161,13 @@ void move_x_forward(int no_of_steps) {
 void move_x_reverse(int no_of_steps) {
   for (int i=1; i <= no_of_steps; i++){
     xTopStepper.step(-1); // move top x stepper
-    xBottomStepper.step(1); // move bottom x stepper
-  }
+    xBtmStepper.step(1); // move bottom x stepper  
+   }
 }
 
 //z motion function
 void move_z(int no_of_steps) {
-  zStepper.step(no_of_steps); // move top z stepper
+  Step(no_of_steps, Z_PIN_1, Z_PIN_2, Z_PIN_3, Z_PIN_4); // move top z stepper
 }
 
 // y motion function
@@ -108,26 +191,46 @@ void calibrate(){
 
 
 void setup() {
-  // set the speed at 60 rpm:
-  xTopStepper.setSpeed(60);
-  xBottomStepper.setSpeed(60);
-  zStepper.setSpeed(60);
 
+  //speed
+  xTopStepper.setSpeed(60); //rpms
+  xBtmStepper.setSpeed(60); //rpms
   // attaches the servo on pin 9 to the servo object
   yServo.attach(9); 
-  set_angle(180); 
+  set_angle(90); 
   
   
   // initialize the serial port:
   Serial.begin(9600);
 
   //setup pinmode
+  pinMode(X_TOP_PIN_1, OUTPUT);
+  pinMode(X_TOP_PIN_2, OUTPUT);
+  pinMode(X_TOP_PIN_3, OUTPUT);
+  pinMode(X_TOP_PIN_4, OUTPUT);
+  pinMode(X_BTM_PIN_1, OUTPUT);
+  pinMode(X_BTM_PIN_2, OUTPUT);
+  pinMode(X_BTM_PIN_3, OUTPUT);
+  pinMode(X_BTM_PIN_4, OUTPUT);
+  pinMode(Z_PIN_1, OUTPUT);
+  pinMode(Z_PIN_2, OUTPUT);
+  pinMode(Z_PIN_3, OUTPUT);
+  pinMode(Z_PIN_4, OUTPUT);
 
+  
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
- move_x_forward(400);
- move_x_reverse(400);
-
+  move_x_forward(200);
+  move_x_reverse(200);
+  move_z(-200);
+  move_z(200);
+  
+  for(int i=0; i<= 180; i++){
+    set_angle(i);
+    delay(50);
+  }
+ 
+ 
 }
