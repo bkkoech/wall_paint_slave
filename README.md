@@ -1,0 +1,1 @@
+# wall_paint_slave
