@@ -45,11 +45,11 @@ int z_stepCount = 0;
 int x_pos = 0; //default x position in steps
 int y_pos = 0; //default y position in degrees
 int z_pos = 0; //default z position
-int x_btn_left_R = 146;
-int x_btn_right_R = 254;
-int z_btn_top_R = 434;
-int z_btn_bottom_R = 1013;
-int R_offset = 5;
+int x_btn_left_R = 1001 ;
+int x_btn_right_R = 434;
+int z_btn_top_R = 146;
+int z_btn_bottom_R = 252;
+int R_offset = 60;
 
 // Initialize stepper object for x motion
 Stepper xTopStepper(200,X_TOP_PIN_1,X_TOP_PIN_2,X_TOP_PIN_3,X_TOP_PIN_4);
@@ -263,10 +263,9 @@ void loop() {
 
   */
 
- // code for going back and forth using move_axes
-  /*
+ // code for going back and forth using move_axes  
   move_axes(300, 300, 80);
-  move_axes(-300, -300, 110);
-  */
- 
+  move_axes(-300, -300, 80);
+  Serial.print(analogRead(A0));
+  Serial.print("\n");
 }
