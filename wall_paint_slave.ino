@@ -33,6 +33,7 @@ Calibrate()
 #define Z_PIN_3 2
 #define Z_PIN_4 3
 #define BUTTONS_PIN A0
+#define SENSOR_PIN A1
 
 
 // Load libraries and modules
@@ -40,8 +41,8 @@ Calibrate()
 #include <Servo.h>
 
 //Constants and Variables
-int x_stepCount = 0; // number of steps the x motors have taken
-int z_stepCount = 0;
+int x_stepCount = 0; // number of steps it takes to cover the entire x length
+int z_stepCount = 0; // number of steps it takes to cover the entire z length
 int x_pos = 0; //default x position in steps
 int y_pos = 0; //default y position in degrees
 int z_pos = 0; //default z position
@@ -50,6 +51,8 @@ int x_btn_right_R = 434;
 int z_btn_top_R = 146;
 int z_btn_bottom_R = 252;
 int R_offset = 60;
+String receivedData = "";
+
 
 // Initialize stepper object for x motion
 Stepper xTopStepper(200,X_TOP_PIN_1,X_TOP_PIN_2,X_TOP_PIN_3,X_TOP_PIN_4);
@@ -125,6 +128,7 @@ void move_axes(int x_steps, int z_steps, int y_angle){
   }
   
 }
+
 
 
 void go_to_coordinates(int x, int z, int y_angle){
@@ -213,7 +217,79 @@ bool calibrate(){
 }
 
 
+// fuction to listen for commands from master(Raspberry Pi)
+void listenToPi() {
 
+  // Wait for data to be available
+  while (Serial.available() > 0) {
+
+    // store received data as a string 
+    // get new byte
+    char inChar = (char)Serial.read();
+    //add it to the receivedData
+    receivedData += inChar;
+    //break loop if incoming character is a new line
+    if(inChar == '\n'){
+      //confirm that data was received
+      Serial.print("Received");
+      break;
+    }
+  }
+  
+
+  //return value
+  // return receivedData;
+}
+
+ void parseSerialData(char *data){
+  // check fuction being called
+  if(data == "move_axes"){
+    // extract values of function
+    //call move_axes and invoke with arguments
+    
+  }else if(data == "go_to_coordinates"){
+    //call go to coordinates and invoke with arguments
+    
+  }else if(data == "calibrate"){
+    // call calibrate
+    
+  }else{ // run this if none match
+    Serial.print(data);
+    Serial.print("\n");
+    Serial.print("sysError: function does not exist");
+  }
+
+  
+ }
+
+ long getDistance(){
+  // based on PING example by arduino
+  
+  // establish variables for duration of the ping,
+  // and the distance result in inches and centimeters:
+  long duration, mm;
+
+  // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
+  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+  pinMode(SENSOR_PIN, OUTPUT);
+  digitalWrite(SENSOR_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(SENSOR_PIN, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(SENSOR_PIN, LOW);
+
+  // The same pin is used to read the signal from the PING))): a HIGH
+  // pulse whose duration is the time (in microseconds) from the sending
+  // of the ping to the reception of its echo off of an object.
+  pinMode(SENSOR_PIN, INPUT);
+  duration = pulseIn(SENSOR_PIN, HIGH);
+
+  // convert the time into a distance
+  // speed of sound = 2.9 microseconds per mm
+  mm = duration/2.9/2;
+
+  return mm;
+ }
 
 void setup() {
 
@@ -225,6 +301,9 @@ void setup() {
   // attaches the servo on pin 9 to the servo object
   yServo.attach(9); 
   set_angle(110); 
+
+  // reserve 200 bytes for the receivedData:
+  receivedData.reserve(200);
   
   // initialize the serial port:
   Serial.begin(9600);
@@ -264,8 +343,18 @@ void loop() {
   */
 
  // code for going back and forth using move_axes  
-  move_axes(300, 300, 80);
-  move_axes(-300, -300, 80);
-  Serial.print(analogRead(A0));
-  Serial.print("\n");
+  // move_axes(300, 300, 80);
+  // move_axes(-300, -300, 80);
+  // Serial.print(analogRead(A0));
+  // Serial.print("\n");
+
+  //code for testing if data received over serial
+  //retrieve data
+  listenToPi();
+  if(receivedData != ""){
+    Serial.print(receivedData);
+  }else{
+    Serial.print("Waiting for data\n");
+  }
+  
 }
