@@ -220,6 +220,7 @@ bool calibrate(){
 // fuction to listen for commands from master(Raspberry Pi)
 void listenToPi() {
 
+  
   // Wait for data to be available
   while (Serial.available() > 0) {
 
@@ -353,8 +354,8 @@ void loop() {
   listenToPi();
   if(receivedData != ""){
     Serial.print(receivedData);
-  }else{
-    Serial.print("Waiting for data\n");
+    receivedData = "";
   }
+
   
 }
